@@ -1,0 +1,8 @@
+yfinance>=0.2.36
+matplotlib>=3.8.0
+pandas>=2.1.0
+mplfinance>=0.12.10b0
+colorama>=0.4.6
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
