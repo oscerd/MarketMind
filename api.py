@@ -12,6 +12,7 @@ from datetime import datetime
 import pandas as pd
 
 from stock_fetcher import StockFetcher
+from stock_predictor import StockPredictor
 from stock_cli import DEFAULT_MARKET_SYMBOLS
 
 # Initialize FastAPI app
@@ -114,6 +115,22 @@ class ErrorResponse(BaseModel):
     detail: Optional[str] = None
 
 
+class PredictionPoint(BaseModel):
+    date: str
+    conservative: float
+    moderate: float
+    optimistic: float
+    change_percent_moderate: float
+
+
+class PredictionResponse(BaseModel):
+    symbol: str
+    current_price: float
+    predictions: List[PredictionPoint]
+    methods_used: List[str]
+    disclaimer: str
+
+
 # Helper functions
 def dataframe_to_dict(df: pd.DataFrame) -> List[Dict]:
     """Convert DataFrame to list of dictionaries."""
@@ -149,7 +166,9 @@ async def root():
             "analyst": "/analyst/{symbol}",
             "market_analyst": "/analyst/market",
             "historical": "/historical/{symbol}",
-            "compare": "/compare/{symbol1}/{symbol2}"
+            "compare": "/compare/{symbol1}/{symbol2}",
+            "predict": "/predict/{symbol}",
+            "health": "/health"
         }
     }
 
@@ -320,6 +339,42 @@ async def compare_stocks(
             symbol1.upper(): dataframe_to_dict(data1),
             symbol2.upper(): dataframe_to_dict(data2)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/predict/{symbol}", response_model=PredictionResponse, tags=["Prediction"])
+async def predict_stock_price(
+    symbol: str,
+    days: int = Query(7, description="Number of days to predict ahead", ge=1, le=30)
+):
+    """
+    Predict future stock prices using ensemble machine learning methods.
+
+    - **symbol**: Stock ticker symbol
+    - **days**: Number of days to predict ahead (default: 7, max: 30)
+
+    Returns predictions with conservative, moderate, and optimistic estimates.
+    """
+    try:
+        fetcher = StockFetcher(symbol.upper())
+
+        # Get 3 months of historical data
+        historical_data = fetcher.get_historical_data(period='3mo', interval='1d')
+
+        if historical_data.empty:
+            raise HTTPException(status_code=404, detail=f"No historical data available for {symbol}")
+
+        # Create predictor and get ensemble prediction
+        predictor = StockPredictor(symbol.upper(), historical_data)
+        result = predictor.predict_ensemble(days)
+
+        if 'error' in result:
+            raise HTTPException(status_code=400, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

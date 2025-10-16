@@ -10,6 +10,7 @@ from typing import List
 from stock_fetcher import StockFetcher
 from stock_visualizer import StockVisualizer
 from realtime_monitor import RealtimeMonitor
+from stock_predictor import StockPredictor
 from colorama import Fore, Style, init
 
 # Initialize colorama
@@ -113,6 +114,102 @@ DEFAULT_MARKET_SYMBOLS = [
     # Semiconductors
     'TSM', 'AVGO', 'QCOM', 'MU',
 ]
+
+
+def predict_price(symbol: str, days: int = 7, method: str = 'ensemble'):
+    """Predict future stock prices."""
+    fetcher = StockFetcher(symbol)
+
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== {symbol} Price Prediction ==={Style.RESET_ALL}\n")
+    print(f"{Fore.YELLOW}Fetching historical data for analysis...{Style.RESET_ALL}\n")
+
+    # Get sufficient historical data (3 months)
+    historical_data = fetcher.get_historical_data(period='3mo', interval='1d')
+
+    if historical_data.empty:
+        print(f"{Fore.RED}No historical data available for {symbol}{Style.RESET_ALL}\n")
+        return
+
+    predictor = StockPredictor(symbol, historical_data)
+
+    # Get prediction based on method
+    if method == 'ensemble':
+        result = predictor.predict_ensemble(days)
+    elif method == 'linear':
+        result = predictor.predict_linear_regression(days)
+    elif method == 'ma':
+        result = predictor.predict_moving_average(days)
+    elif method == 'advanced':
+        result = predictor.predict_advanced(days)
+    else:
+        print(f"{Fore.RED}Unknown prediction method: {method}{Style.RESET_ALL}\n")
+        return
+
+    if 'error' in result:
+        print(f"{Fore.RED}Error: {result['error']}{Style.RESET_ALL}\n")
+        return
+
+    # Display current price
+    print(f"{Fore.WHITE}{Style.BRIGHT}Current Price: {Fore.YELLOW}${result['current_price']:.2f}{Style.RESET_ALL}\n")
+
+    # Display predictions
+    if method == 'ensemble':
+        print(f"{Fore.WHITE}{Style.BRIGHT}Ensemble Predictions (Next {days} days):{Style.RESET_ALL}\n")
+        print(f"{'Date':<12} {'Conservative':<15} {'Moderate':<15} {'Optimistic':<15} {'Change %'}")
+        print("-" * 75)
+
+        for pred in result['predictions']:
+            date = pred['date']
+            conservative = pred['conservative']
+            moderate = pred['moderate']
+            optimistic = pred['optimistic']
+            change_pct = pred['change_percent_moderate']
+
+            # Color code the change
+            if change_pct > 0:
+                change_color = Fore.GREEN
+                arrow = "↑"
+            else:
+                change_color = Fore.RED
+                arrow = "↓"
+
+            print(f"{date:<12} "
+                  f"{Fore.RED}${conservative:>7.2f}{Style.RESET_ALL}       "
+                  f"{Fore.YELLOW}${moderate:>7.2f}{Style.RESET_ALL}       "
+                  f"{Fore.GREEN}${optimistic:>7.2f}{Style.RESET_ALL}       "
+                  f"{change_color}{arrow} {abs(change_pct):>6.2f}%{Style.RESET_ALL}")
+
+        print("\n" + f"{Fore.CYAN}Methods Used: {', '.join(result['methods_used'])}{Style.RESET_ALL}")
+
+    else:
+        print(f"{Fore.WHITE}{Style.BRIGHT}{result['method']} Predictions (Next {days} days):{Style.RESET_ALL}\n")
+        print(f"{'Date':<12} {'Predicted Price':<20} {'Confidence'}")
+        print("-" * 50)
+
+        for pred in result['predictions']:
+            date = pred['date']
+            price = pred['predicted_price']
+            confidence = pred.get('confidence', 0.5)
+
+            # Color code confidence
+            if confidence >= 0.7:
+                conf_color = Fore.GREEN
+            elif confidence >= 0.5:
+                conf_color = Fore.YELLOW
+            else:
+                conf_color = Fore.RED
+
+            print(f"{date:<12} ${price:>10.2f}          {conf_color}{confidence*100:.1f}%{Style.RESET_ALL}")
+
+        if 'r_squared' in result:
+            print(f"\n{Fore.CYAN}Model R²: {result['r_squared']:.4f}{Style.RESET_ALL}")
+        if 'trend' in result:
+            trend_color = Fore.GREEN if result['trend'] == 'upward' else Fore.RED
+            print(f"{Fore.CYAN}Trend: {trend_color}{result['trend'].upper()}{Style.RESET_ALL}")
+
+    # Disclaimer
+    print(f"\n{Fore.YELLOW}⚠️  Disclaimer: These predictions are based on historical data and statistical models.")
+    print(f"   They should NOT be used as financial advice. Always do your own research.{Style.RESET_ALL}\n")
 
 
 def show_market_analyst_changes(days_back: int = 1, symbols: List = None):
@@ -398,6 +495,12 @@ Examples:
   # Get market-wide analyst changes for the last 3 days
   python stock_cli.py analyst market --days 3
 
+  # Predict stock price for next 7 days (ensemble method)
+  python stock_cli.py predict AAPL
+
+  # Predict with specific method and timeframe
+  python stock_cli.py predict TSLA --days 14 --method linear
+
 Valid periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max
 Valid chart types: line, candlestick, intraday, comparison
 Valid comparison types: price, performance
@@ -456,6 +559,15 @@ Valid comparison types: price, performance
     analyst_parser.add_argument('--days', '-d', type=int, default=1,
                                help='Days back to search for market changes (default: 1)')
 
+    # Predict command
+    predict_parser = subparsers.add_parser('predict', help='Predict future stock prices')
+    predict_parser.add_argument('symbol', type=str, help='Stock ticker symbol (e.g., AAPL)')
+    predict_parser.add_argument('--days', '-d', type=int, default=7,
+                               help='Number of days to predict ahead (default: 7)')
+    predict_parser.add_argument('--method', '-m', type=str, default='ensemble',
+                               choices=['ensemble', 'linear', 'ma', 'advanced'],
+                               help='Prediction method: ensemble (default), linear, ma (moving average), advanced')
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -478,6 +590,8 @@ Valid comparison types: price, performance
                 show_market_analyst_changes(args.days)
             else:
                 show_analyst_ratings(args.symbol_or_market, args.limit)
+        elif args.command == 'predict':
+            predict_price(args.symbol, args.days, args.method)
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}Operation cancelled by user.{Style.RESET_ALL}")
         sys.exit(0)

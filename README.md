@@ -5,6 +5,7 @@ A powerful tool for fetching real-time stock quotes, analyst ratings, and market
 ## Features
 
 - **Dual Interface**: Both CLI and REST API for maximum flexibility
+- **AI-Powered Price Prediction**: Machine learning models predict future stock prices (ensemble, linear regression, moving average, advanced)
 - **Real-time Quotes**: Get current stock prices, changes, and key metrics
 - **Ticker Search**: Search for detailed company information by ticker symbol
 - **Analyst Ratings**: View analyst recommendations, upgrades, and downgrades for individual stocks
@@ -34,6 +35,8 @@ This project provides two interfaces:
 1. **Command-Line Interface (CLI)** - For terminal usage
 2. **REST API** - For programmatic access via HTTP
 
+Both interfaces now include **AI-powered price prediction** using machine learning models!
+
 ### REST API
 
 Start the API server:
@@ -62,6 +65,7 @@ The API will be available at `http://localhost:8000`
 | `/analyst/market?days=1` | GET | Get market-wide analyst changes |
 | `/historical/{symbol}?period=1mo&interval=1d` | GET | Get historical stock data |
 | `/compare/{symbol1}/{symbol2}?period=1mo` | GET | Compare two stocks |
+| `/predict/{symbol}?days=7` | GET | Predict future stock prices |
 | `/health` | GET | Health check endpoint |
 
 **Example API Calls:**
@@ -81,6 +85,9 @@ curl "http://localhost:8000/historical/AAPL?period=1mo&interval=1d"
 
 # Compare two stocks
 curl http://localhost:8000/compare/AAPL/MSFT?period=6mo
+
+# Predict future prices
+curl http://localhost:8000/predict/AAPL?days=7
 ```
 
 **Response Example:**
@@ -104,7 +111,7 @@ curl http://localhost:8000/compare/AAPL/MSFT?period=6mo
 
 ### Command-Line Interface
 
-The CLI has six main commands: `quote`, `chart`, `monitor`, `search`, `compare`, and `analyst`.
+The CLI has seven main commands: `quote`, `chart`, `monitor`, `search`, `compare`, `analyst`, and `predict`.
 
 ### Get Current Quote
 
@@ -253,6 +260,62 @@ The market scan covers 56 major stocks across sectors including:
 - Consumer (WMT, HD, DIS, etc.)
 - Energy (XOM, CVX, etc.)
 - And more
+
+### Predict Future Stock Prices
+
+Use machine learning to predict future stock prices based on historical data:
+
+**Ensemble prediction (combines multiple ML methods - recommended):**
+```bash
+python stock_cli.py predict AAPL
+```
+
+Example output:
+```
+=== AAPL Price Prediction ===
+
+Current Price: $178.45
+
+Ensemble Predictions (Next 7 days):
+
+Date         Conservative    Moderate        Optimistic      Change %
+---------------------------------------------------------------------------
+2024-03-16   $176.20        $179.30        $182.40        ↑   0.48%
+2024-03-17   $177.50        $180.15        $182.80        ↑   0.95%
+2024-03-18   $178.10        $181.00        $183.90        ↑   1.43%
+2024-03-19   $178.80        $181.85        $184.90        ↑   1.91%
+2024-03-20   $179.40        $182.70        $186.00        ↑   2.38%
+2024-03-21   $180.00        $183.55        $187.10        ↑   2.86%
+2024-03-22   $180.60        $184.40        $188.20        ↑   3.34%
+
+Methods Used: Linear Regression, Moving Average, Advanced Multi-Feature
+```
+
+**Predict with specific method:**
+```bash
+# Linear regression
+python stock_cli.py predict TSLA --method linear --days 14
+
+# Moving average
+python stock_cli.py predict GOOGL --method ma --days 5
+
+# Advanced multi-feature
+python stock_cli.py predict NVDA --method advanced --days 10
+```
+
+**Available Methods:**
+- `ensemble` (default) - Combines multiple methods for best accuracy
+- `linear` - Linear regression on recent trend
+- `ma` - Moving average based prediction
+- `advanced` - Uses technical indicators (SMA, MACD, ROC, volatility)
+
+**Prediction Outputs:**
+- **Conservative**: Lower bound estimate (minimum expected price)
+- **Moderate**: Most likely price (weighted average of methods)
+- **Optimistic**: Upper bound estimate (maximum expected price)
+- **Change %**: Percentage change from current price (for moderate estimate)
+
+⚠️ **Important**: Predictions are for informational purposes only and should NOT be used as financial advice.
 
 ### Compare Two Stock Symbols
 
@@ -411,6 +474,11 @@ python stock_cli.py analyst NVDA
 python stock_cli.py analyst market
 ```
 
+### Predict Future Prices
+```bash
+python stock_cli.py predict AAPL --days 14
+```
+
 ## Common Stock Symbols
 
 - **AAPL** - Apple Inc.
@@ -430,6 +498,7 @@ stock-exchange-yahoo/
 ├── stock_cli.py          # Main CLI application
 ├── api.py                # REST API server (FastAPI)
 ├── stock_fetcher.py      # Yahoo Finance data fetcher
+├── stock_predictor.py    # AI price prediction models
 ├── stock_visualizer.py   # Chart visualization module
 ├── realtime_monitor.py   # Real-time quote monitoring
 ├── requirements.txt      # Python dependencies
@@ -442,6 +511,11 @@ stock-exchange-yahoo/
 ### Core
 - **yfinance** - Yahoo Finance data API
 - **pandas** - Data manipulation
+- **numpy** - Numerical computing
+
+### Machine Learning
+- **scikit-learn** - ML models for price prediction
+- Technical indicators and statistical analysis
 
 ### CLI
 - **matplotlib** - Plotting library
