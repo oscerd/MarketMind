@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stock Exchange Yahoo Finance CLI
+MarketMind CLI
 A command-line tool for fetching real-time stock quotes and displaying charts.
 """
 
@@ -11,6 +11,7 @@ from stock_fetcher import StockFetcher
 from stock_visualizer import StockVisualizer
 from realtime_monitor import RealtimeMonitor
 from stock_predictor import StockPredictor
+from quant_analysis import QuantAnalysis
 from colorama import Fore, Style, init
 
 # Initialize colorama
@@ -114,6 +115,161 @@ DEFAULT_MARKET_SYMBOLS = [
     # Semiconductors
     'TSM', 'AVGO', 'QCOM', 'MU',
 ]
+
+
+def show_quant_analysis(symbol: str, benchmark: str = 'SPY', period: str = '1y'):
+    """Display quantitative finance analysis."""
+    fetcher = StockFetcher(symbol)
+
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== {symbol} Quantitative Analysis ==={Style.RESET_ALL}\n")
+    print(f"{Fore.YELLOW}Fetching {period} of historical data...{Style.RESET_ALL}\n")
+
+    # Get stock data
+    stock_data = fetcher.get_historical_data(period=period, interval='1d')
+
+    if stock_data.empty:
+        print(f"{Fore.RED}No data available for {symbol}{Style.RESET_ALL}\n")
+        return
+
+    # Get benchmark data if specified
+    benchmark_data = None
+    if benchmark:
+        print(f"{Fore.YELLOW}Fetching benchmark data ({benchmark})...{Style.RESET_ALL}\n")
+        benchmark_fetcher = StockFetcher(benchmark)
+        benchmark_data = benchmark_fetcher.get_historical_data(period=period, interval='1d')
+
+    # Perform analysis
+    quant = QuantAnalysis(symbol, stock_data, benchmark_data)
+    analysis = quant.get_comprehensive_analysis()
+
+    # Display analysis period
+    print(f"{Fore.WHITE}{Style.BRIGHT}Analysis Period:{Style.RESET_ALL}")
+    print(f"From: {analysis['analysis_period']['start_date']}")
+    print(f"To:   {analysis['analysis_period']['end_date']}")
+    print(f"Trading Days: {analysis['analysis_period']['trading_days']}\n")
+
+    # Display returns
+    returns = analysis['returns']
+    if 'error' not in returns:
+        print(f"{Fore.WHITE}{Style.BRIGHT}Return Metrics:{Style.RESET_ALL}")
+        print(f"Total Return:          {Fore.GREEN if returns['total_return_pct'] > 0 else Fore.RED}{returns['total_return_pct']:>8.2f}%{Style.RESET_ALL}")
+        print(f"Annualized Return:     {returns['annualized_return_pct']:>8.2f}%")
+        print(f"Annualized Volatility: {returns['annualized_volatility_pct']:>8.2f}%")
+        print(f"Daily Avg Return:      {returns['daily_return_mean_pct']:>8.4f}%")
+        print(f"Daily Volatility:      {returns['daily_return_std_pct']:>8.4f}%\n")
+
+    # Display risk metrics
+    risk = analysis['risk_metrics']
+    print(f"{Fore.WHITE}{Style.BRIGHT}Risk-Adjusted Performance:{Style.RESET_ALL}")
+
+    sharpe = risk['sharpe_ratio']
+    sharpe_color = Fore.GREEN if sharpe > 1 else Fore.YELLOW if sharpe > 0 else Fore.RED
+    print(f"Sharpe Ratio:          {sharpe_color}{sharpe:>8.2f}{Style.RESET_ALL}")
+
+    sortino = risk['sortino_ratio']
+    sortino_color = Fore.GREEN if sortino > 1 else Fore.YELLOW if sortino > 0 else Fore.RED
+    print(f"Sortino Ratio:         {sortino_color}{sortino:>8.2f}{Style.RESET_ALL}")
+
+    if risk['information_ratio'] is not None:
+        ir = risk['information_ratio']
+        ir_color = Fore.GREEN if ir > 0.5 else Fore.YELLOW if ir > 0 else Fore.RED
+        print(f"Information Ratio:     {ir_color}{ir:>8.2f}{Style.RESET_ALL}")
+
+    print()
+
+    # Display VaR
+    print(f"{Fore.WHITE}{Style.BRIGHT}Value at Risk (VaR):{Style.RESET_ALL}")
+    var_95 = risk['var_95']
+    if 'error' not in var_95:
+        print(f"95% VaR (1-day):       {Fore.RED}{var_95['historical_var_pct']:>8.2f}%{Style.RESET_ALL}")
+        print(f"95% CVaR:              {Fore.RED}{risk['cvar_95']:>8.2f}%{Style.RESET_ALL}")
+
+    var_99 = risk['var_99']
+    if 'error' not in var_99:
+        print(f"99% VaR (1-day):       {Fore.RED}{var_99['historical_var_pct']:>8.2f}%{Style.RESET_ALL}")
+
+    print()
+
+    # Display drawdown
+    dd = risk['max_drawdown']
+    if 'error' not in dd:
+        print(f"{Fore.WHITE}{Style.BRIGHT}Drawdown Analysis:{Style.RESET_ALL}")
+        print(f"Max Drawdown:          {Fore.RED}{dd['max_drawdown_pct']:>8.2f}%{Style.RESET_ALL}")
+        print(f"Peak Date:             {dd['peak_date']}")
+        print(f"Trough Date:           {dd['trough_date']}")
+        if dd['recovery_period_days']:
+            print(f"Recovery Period:       {dd['recovery_period_days']} days")
+        print(f"Current Drawdown:      {Fore.YELLOW if dd['current_drawdown_pct'] < -5 else Fore.GREEN}{dd['current_drawdown_pct']:>8.2f}%{Style.RESET_ALL}\n")
+
+    # Display market metrics
+    if analysis['market_metrics'] and 'error' not in analysis['market_metrics']:
+        market = analysis['market_metrics']
+        print(f"{Fore.WHITE}{Style.BRIGHT}Market Metrics (vs {benchmark}):{Style.RESET_ALL}")
+
+        beta = market['beta']
+        beta_color = Fore.GREEN if 0.8 <= beta <= 1.2 else Fore.YELLOW
+        print(f"Beta:                  {beta_color}{beta:>8.2f}{Style.RESET_ALL}")
+        print(f"  → {market['interpretation']['beta']}")
+
+        alpha = market['alpha']
+        alpha_color = Fore.GREEN if alpha > 0 else Fore.RED
+        print(f"Alpha (annualized):    {alpha_color}{alpha*100:>8.2f}%{Style.RESET_ALL}")
+        print(f"  → {market['interpretation']['alpha']}\n")
+
+    # Display recommendation
+    if 'recommendation' in analysis:
+        rec = analysis['recommendation']
+        print(f"{Fore.WHITE}{Style.BRIGHT}Investment Recommendation:{Style.RESET_ALL}")
+        print("=" * 75)
+
+        # Color code recommendation
+        rec_text = rec['recommendation']
+        if rec_text == 'STRONG BUY':
+            rec_color = Fore.GREEN + Style.BRIGHT
+        elif rec_text == 'BUY':
+            rec_color = Fore.GREEN
+        elif rec_text == 'HOLD':
+            rec_color = Fore.YELLOW
+        elif rec_text == 'SELL':
+            rec_color = Fore.RED
+        else:  # STRONG SELL
+            rec_color = Fore.RED + Style.BRIGHT
+
+        print(f"\n{rec_color}Recommendation: {rec_text}{Style.RESET_ALL}")
+        print(f"Confidence: {rec['confidence']}")
+        print(f"Score: {rec['score']}/10\n")
+
+        print(f"{Fore.WHITE}Action:{Style.RESET_ALL} {rec['action']}\n")
+
+        if rec['positive_signals']:
+            print(f"{Fore.GREEN}Positive Signals:{Style.RESET_ALL}")
+            for signal in rec['positive_signals']:
+                print(f"  ✓ {signal}")
+            print()
+
+        if rec['risk_warnings']:
+            print(f"{Fore.YELLOW}Risk Warnings:{Style.RESET_ALL}")
+            for warning in rec['risk_warnings']:
+                print(f"  ⚠ {warning}")
+            print()
+
+        print(f"{Fore.WHITE}Summary:{Style.RESET_ALL}")
+        print(f"{rec['summary']}\n")
+
+        print(f"{Fore.RED}⚠️  DISCLAIMER:{Style.RESET_ALL}")
+        print(f"{rec['disclaimer']}\n")
+
+        print("=" * 75)
+        print()
+
+    # Interpretation guide
+    print(f"{Fore.CYAN}Interpretation Guide:{Style.RESET_ALL}")
+    print(f"  Sharpe Ratio:  >1 = Good, >2 = Very Good, >3 = Excellent")
+    print(f"  Sortino Ratio: Similar to Sharpe, but focuses on downside risk")
+    print(f"  Beta:          <1 = Less volatile, =1 = Market volatility, >1 = More volatile")
+    print(f"  Alpha:         >0 = Outperforming, <0 = Underperforming")
+    print(f"  VaR:           Maximum expected loss at given confidence level")
+    print()
 
 
 def predict_price(symbol: str, days: int = 7, method: str = 'ensemble'):
@@ -443,7 +599,7 @@ def search_ticker(symbols: list, detailed: bool = False):
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description='Stock Exchange Yahoo Finance CLI - Real-time quotes and charts',
+        description='MarketMind CLI - Real-time quotes and charts',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -500,6 +656,12 @@ Examples:
 
   # Predict with specific method and timeframe
   python stock_cli.py predict TSLA --days 14 --method linear
+
+  # Quantitative analysis
+  python stock_cli.py quant AAPL
+
+  # Quantitative analysis with custom benchmark and period
+  python stock_cli.py quant TSLA --benchmark QQQ --period 2y
 
 Valid periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max
 Valid chart types: line, candlestick, intraday, comparison
@@ -568,6 +730,14 @@ Valid comparison types: price, performance
                                choices=['ensemble', 'linear', 'ma', 'advanced'],
                                help='Prediction method: ensemble (default), linear, ma (moving average), advanced')
 
+    # Quant command
+    quant_parser = subparsers.add_parser('quant', help='Quantitative finance analysis')
+    quant_parser.add_argument('symbol', type=str, help='Stock ticker symbol (e.g., AAPL)')
+    quant_parser.add_argument('--benchmark', '-b', type=str, default='SPY',
+                             help='Benchmark symbol for comparison (default: SPY)')
+    quant_parser.add_argument('--period', '-p', type=str, default='1y',
+                             help='Analysis period (default: 1y)')
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -592,6 +762,8 @@ Valid comparison types: price, performance
                 show_analyst_ratings(args.symbol_or_market, args.limit)
         elif args.command == 'predict':
             predict_price(args.symbol, args.days, args.method)
+        elif args.command == 'quant':
+            show_quant_analysis(args.symbol, args.benchmark, args.period)
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}Operation cancelled by user.{Style.RESET_ALL}")
         sys.exit(0)

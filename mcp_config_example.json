@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "marketmind": {
+      "command": "python",
+      "args": [
+        "/absolute/path/to/MarketMind/mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}

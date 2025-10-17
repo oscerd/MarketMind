@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stock Exchange Yahoo Finance REST API
+MarketMind REST API
 A FastAPI server exposing stock data endpoints.
 """
 
@@ -13,11 +13,12 @@ import pandas as pd
 
 from stock_fetcher import StockFetcher
 from stock_predictor import StockPredictor
+from quant_analysis import QuantAnalysis
 from stock_cli import DEFAULT_MARKET_SYMBOLS
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Stock Exchange Yahoo Finance API",
+    title="MarketMind API",
     description="REST API for fetching real-time stock quotes, analyst ratings, and market data",
     version="1.0.0"
 )
@@ -157,7 +158,7 @@ def dataframe_to_dict(df: pd.DataFrame) -> List[Dict]:
 async def root():
     """API root endpoint with welcome message."""
     return {
-        "message": "Stock Exchange Yahoo Finance API",
+        "message": "MarketMind API",
         "version": "1.0.0",
         "docs": "/docs",
         "endpoints": {
@@ -168,6 +169,7 @@ async def root():
             "historical": "/historical/{symbol}",
             "compare": "/compare/{symbol1}/{symbol2}",
             "predict": "/predict/{symbol}",
+            "quant": "/quant/{symbol}",
             "health": "/health"
         }
     }
@@ -373,6 +375,46 @@ async def predict_stock_price(
             raise HTTPException(status_code=400, detail=result['error'])
 
         return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/quant/{symbol}", tags=["Quantitative Analysis"])
+async def get_quant_analysis(
+    symbol: str,
+    benchmark: str = Query("SPY", description="Benchmark symbol for comparison"),
+    period: str = Query("1y", description="Analysis period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, max)")
+):
+    """
+    Get comprehensive quantitative finance analysis.
+
+    - **symbol**: Stock ticker symbol
+    - **benchmark**: Benchmark symbol for Beta/Alpha calculation (default: SPY)
+    - **period**: Analysis period (default: 1y)
+
+    Returns metrics including Sharpe ratio, Beta, Alpha, VaR, drawdown, and more.
+    """
+    try:
+        # Fetch stock data
+        fetcher = StockFetcher(symbol.upper())
+        stock_data = fetcher.get_historical_data(period=period, interval='1d')
+
+        if stock_data.empty:
+            raise HTTPException(status_code=404, detail=f"No historical data available for {symbol}")
+
+        # Fetch benchmark data
+        benchmark_data = None
+        if benchmark:
+            benchmark_fetcher = StockFetcher(benchmark.upper())
+            benchmark_data = benchmark_fetcher.get_historical_data(period=period, interval='1d')
+
+        # Perform quantitative analysis
+        quant = QuantAnalysis(symbol.upper(), stock_data, benchmark_data)
+        analysis = quant.get_comprehensive_analysis()
+
+        return analysis
     except HTTPException:
         raise
     except Exception as e:
