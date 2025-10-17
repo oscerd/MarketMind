@@ -1114,4 +1114,5 @@ MarketMind/
 
 ## Disclaimer
 
-This tool is for informational purposes only. It is not financial advice. Always do your own research before making investment decisions.
+This is a pet project and it's used for demo purpose only. 
+This tool is for informational purposes and it is not financial advice. Always do your own research before making investment decisions.
