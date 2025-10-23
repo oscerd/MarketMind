@@ -450,7 +450,40 @@ class QuantAnalysis:
                 'max_drawdown': self.calculate_max_drawdown()
             },
             'market_metrics': self.calculate_beta_alpha() if self.benchmark_data is not None else None,
-            'recommendation': self.generate_recommendation(risk_free_rate)
+            'recommendation': self.generate_recommendation(risk_free_rate),
+            'metrics_glossary': {
+                'returns': {
+                    'total_return_pct': 'Total percentage return over the analysis period',
+                    'daily_return_mean_pct': 'Average daily return as a percentage',
+                    'daily_return_std_pct': 'Standard deviation of daily returns (daily volatility)',
+                    'annualized_return_pct': 'Expected annual return based on average daily returns (assumes 252 trading days)',
+                    'annualized_volatility_pct': 'Annualized standard deviation of returns, measuring price fluctuation',
+                    'max_return_pct': 'Single best daily return during the period',
+                    'min_return_pct': 'Single worst daily return during the period',
+                    'cumulative_return_pct': 'Cumulative return accounting for compounding effects'
+                },
+                'risk_metrics': {
+                    'sharpe_ratio': 'Risk-adjusted return metric. Measures excess return per unit of risk. Higher is better. >1 is good, >2 is very good, >3 is excellent',
+                    'sortino_ratio': 'Similar to Sharpe but only considers downside volatility (negative returns). Better for asymmetric return distributions',
+                    'information_ratio': 'Measures consistency of excess returns relative to benchmark. Higher values indicate more consistent outperformance',
+                    'var_95': 'Value at Risk at 95% confidence. Maximum expected loss that won\'t be exceeded 95% of the time',
+                    'var_99': 'Value at Risk at 99% confidence. Maximum expected loss that won\'t be exceeded 99% of the time',
+                    'cvar_95': 'Conditional VaR (Expected Shortfall). Average loss when VaR threshold is breached. Measures tail risk',
+                    'max_drawdown': 'Largest peak-to-trough decline. Measures worst historical loss from a high point'
+                },
+                'market_metrics': {
+                    'beta': 'Measures volatility relative to market. <1 = less volatile, 1 = same as market, >1 = more volatile',
+                    'alpha': 'Excess return above what Beta predicts. Positive = outperforming, negative = underperforming. Annualized value'
+                },
+                'interpretation_guide': {
+                    'sharpe_ratio': {'poor': '< 0', 'acceptable': '0 - 1', 'good': '1 - 2', 'very_good': '2 - 3', 'excellent': '> 3'},
+                    'sortino_ratio': {'poor': '< 0', 'acceptable': '0 - 1', 'good': '1 - 2', 'very_good': '2 - 3', 'excellent': '> 3'},
+                    'beta': {'defensive': '< 0.8', 'market_like': '0.8 - 1.2', 'aggressive': '> 1.2'},
+                    'alpha': {'underperforming': '< 0', 'neutral': '0 - 2%', 'outperforming': '2% - 5%', 'strong_outperformance': '> 5%'},
+                    'information_ratio': {'poor': '< 0', 'acceptable': '0 - 0.5', 'good': '0.5 - 1.0', 'excellent': '> 1.0'},
+                    'max_drawdown': {'low_risk': '< -10%', 'moderate_risk': '-10% to -20%', 'high_risk': '-20% to -30%', 'very_high_risk': '> -30%'}
+                }
+            }
         }
 
         return analysis

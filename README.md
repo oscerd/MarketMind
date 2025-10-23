@@ -276,7 +276,11 @@ Request:
 curl "http://localhost:8000/quant/AAPL?benchmark=SPY&period=1y"
 ```
 
-Response includes comprehensive metrics like Sharpe ratio, Beta, Alpha, VaR, drawdown analysis, and automated investment recommendations.
+Response includes:
+- Comprehensive metrics: Sharpe ratio, Beta, Alpha, VaR, drawdown analysis
+- Automated investment recommendations with confidence levels
+- **metrics_glossary**: Detailed descriptions of every metric and interpretation guide
+- **interpretation_guide**: Threshold values for rating each metric (good/poor/excellent)
 
 **9. Health Check**
 
@@ -823,12 +827,14 @@ financial situation before making investment decisions.
 
 ===========================================================================
 
-Interpretation Guide:
+Quick Interpretation Guide:
   Sharpe Ratio:  >1 = Good, >2 = Very Good, >3 = Excellent
   Sortino Ratio: Similar to Sharpe, but focuses on downside risk
   Beta:          <1 = Less volatile, =1 = Market volatility, >1 = More volatile
   Alpha:         >0 = Outperforming, <0 = Underperforming
   VaR:           Maximum expected loss at given confidence level
+
+For detailed explanations of all metrics, see the comprehensive glossary below.
 ```
 
 **Analysis with custom benchmark:**
@@ -841,16 +847,110 @@ python stock_cli.py quant TSLA --benchmark QQQ --period 2y
 python stock_cli.py quant NVDA --period 6mo
 ```
 
-**Quantitative Metrics Explained:**
+**Quantitative Metrics Glossary:**
 
-- **Sharpe Ratio**: Risk-adjusted return metric (higher is better, >1 is good)
-- **Sortino Ratio**: Like Sharpe but only considers downside volatility
-- **Beta**: Measure of volatility relative to market (1 = same as market)
-- **Alpha**: Excess return over benchmark (positive = outperforming)
-- **Value at Risk (VaR)**: Maximum expected loss at confidence level
-- **Conditional VaR (CVaR)**: Average loss when VaR threshold is exceeded
-- **Max Drawdown**: Largest peak-to-trough decline
-- **Information Ratio**: Consistency of outperformance vs benchmark
+#### Return Metrics
+
+- **Total Return**: The overall percentage gain or loss over the analysis period
+- **Annualized Return**: Expected yearly return based on average daily performance (assumes 252 trading days)
+- **Annualized Volatility**: Standard deviation of returns scaled to annual basis. Measures how much prices fluctuate
+- **Daily Return Mean**: Average daily percentage change
+- **Daily Volatility**: Standard deviation of daily returns
+
+#### Risk-Adjusted Performance
+
+- **Sharpe Ratio**: Measures excess return per unit of total risk
+  - Formula: (Return - Risk-Free Rate) / Volatility
+  - Interpretation: >1 = Good, >2 = Very Good, >3 = Excellent
+  - Higher values indicate better risk-adjusted performance
+
+- **Sortino Ratio**: Similar to Sharpe but only penalizes downside volatility
+  - Better for assets with asymmetric return distributions
+  - Only considers negative returns when calculating risk
+  - Interpretation: Same as Sharpe (>1 is good)
+
+- **Information Ratio**: Measures consistency of excess returns versus benchmark
+  - Shows how reliably a stock outperforms its benchmark
+  - Interpretation: >0.5 = Good, >1.0 = Excellent
+
+#### Market-Relative Metrics
+
+- **Beta**: Measures volatility relative to the market (typically S&P 500)
+  - Beta < 1: Less volatile than market (defensive)
+  - Beta = 1: Moves with market
+  - Beta > 1: More volatile than market (aggressive)
+  - Example: Beta of 1.3 means stock moves 30% more than market
+
+- **Alpha**: Excess return beyond what Beta predicts (annualized)
+  - Positive Alpha: Outperforming the market
+  - Negative Alpha: Underperforming the market
+  - Example: Alpha of 3% means stock returns 3% more per year than expected
+
+#### Risk Metrics
+
+- **Value at Risk (VaR)**: Maximum expected loss at a given confidence level
+  - VaR 95% of -2.5%: 95% confidence you won't lose more than 2.5% in one day
+  - VaR 99% provides higher confidence but larger loss estimate
+  - Used for risk management and position sizing
+
+- **Conditional VaR (CVaR)**: Average loss when VaR threshold is breached
+  - Also called Expected Shortfall
+  - Measures "tail risk" - how bad losses are when they occur
+  - Always worse than VaR (measures extreme scenarios)
+
+- **Maximum Drawdown**: Largest peak-to-trough decline during the period
+  - Shows worst historical loss from a high point
+  - Important for understanding downside risk
+  - Interpretation: <-10% = Low Risk, -10% to -20% = Moderate, -20% to -30% = High, >-30% = Very High
+
+- **Current Drawdown**: Current decline from recent peak
+  - Negative value indicates stock is below its recent high
+  - Shows if currently in a losing position
+
+#### Understanding the Metrics Together
+
+**Risk-Adjusted Returns (Sharpe/Sortino)**: Higher ratios mean you're getting better returns for the risk you're taking. A Sharpe of 2.0 is twice as good as 1.0.
+
+**Market Comparison (Beta/Alpha)**: Beta tells you how volatile the stock is. Alpha tells you if the extra risk is worth it. Ideal: High Alpha (outperforming) with manageable Beta.
+
+**Downside Protection (VaR/CVaR/Drawdown)**: These show potential losses. VaR gives typical bad days, CVaR shows extreme scenarios, and Max Drawdown shows historical worst case.
+
+**Trading Days**: All annualized metrics assume 252 trading days per year (typical for US markets)
+
+#### JSON Output Format
+
+When using the API or MCP server, the quantitative analysis includes a `metrics_glossary` section with descriptions for every metric:
+
+```json
+{
+  "symbol": "AAPL",
+  "returns": { ... },
+  "risk_metrics": { ... },
+  "market_metrics": { ... },
+  "recommendation": { ... },
+  "metrics_glossary": {
+    "returns": {
+      "total_return_pct": "Total percentage return over the analysis period",
+      "annualized_return_pct": "Expected annual return..."
+    },
+    "risk_metrics": {
+      "sharpe_ratio": "Risk-adjusted return metric. Measures excess return per unit of risk...",
+      "var_95": "Value at Risk at 95% confidence..."
+    },
+    "interpretation_guide": {
+      "sharpe_ratio": {
+        "poor": "< 0",
+        "acceptable": "0 - 1",
+        "good": "1 - 2",
+        "very_good": "2 - 3",
+        "excellent": "> 3"
+      }
+    }
+  }
+}
+```
+
+This makes the API self-documenting - every response includes explanations of what each metric means and how to interpret it.
 
 **Investment Recommendation System:**
 
