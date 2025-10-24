@@ -78,6 +78,13 @@ The API will be available at `http://localhost:8000`
 | `/compare/{symbol1}/{symbol2}?period=1mo` | GET | Compare two stocks |
 | `/predict/{symbol}?days=7` | GET | Predict future stock prices |
 | `/quant/{symbol}?benchmark=SPY&period=1y` | GET | Get quantitative finance analysis |
+| `/financials/{symbol}/summary` | GET | Get comprehensive financial summary |
+| `/financials/{symbol}/income?quarterly=false` | GET | Get income statement |
+| `/financials/{symbol}/balance?quarterly=false` | GET | Get balance sheet |
+| `/financials/{symbol}/cashflow?quarterly=false` | GET | Get cash flow statement |
+| `/financials/{symbol}/metrics` | GET | Get key financial metrics and ratios |
+| `/financials/{symbol}/earnings` | GET | Get historical earnings data |
+| `/financials/{symbol}/next-earnings` | GET | Get next earnings date with estimates |
 | `/health` | GET | Health check endpoint |
 
 #### Detailed API Examples
@@ -282,7 +289,81 @@ Response includes:
 - **metrics_glossary**: Detailed descriptions of every metric and interpretation guide
 - **interpretation_guide**: Threshold values for rating each metric (good/poor/excellent)
 
-**9. Health Check**
+**9. Get Financial Summary**
+
+Request:
+```bash
+curl http://localhost:8000/financials/AAPL/summary
+```
+
+Response includes revenue, profitability, balance sheet, cash flow, and key financial ratios in a concise format.
+
+**10. Get Financial Metrics**
+
+Request:
+```bash
+curl http://localhost:8000/financials/TSLA/metrics
+```
+
+Response includes:
+- **Valuation metrics**: P/E, PEG, Price/Book, EV/EBITDA, etc.
+- **Profitability metrics**: Profit margin, ROE, ROA, Operating margin
+- **Financial health**: Current ratio, Debt/Equity, Free cash flow
+- **Growth metrics**: Revenue growth, Earnings growth
+- **Dividend metrics**: Dividend yield, Payout ratio
+- **metrics_glossary**: Descriptions of each metric
+
+**11. Get Income Statement**
+
+Request:
+```bash
+# Annual income statement
+curl http://localhost:8000/financials/MSFT/income
+
+# Quarterly income statement
+curl "http://localhost:8000/financials/MSFT/income?quarterly=true"
+```
+
+Response includes revenue, expenses, and net income across multiple periods.
+
+**12. Get Earnings History**
+
+Request:
+```bash
+curl http://localhost:8000/financials/NVDA/earnings
+```
+
+Response shows historical earnings with analyst estimates vs actual reported EPS.
+
+**13. Get Next Earnings Date**
+
+Request:
+```bash
+curl http://localhost:8000/financials/AAPL/next-earnings
+```
+
+Response:
+```json
+{
+  "symbol": "AAPL",
+  "next_earnings_date": "2024-11-01",
+  "earnings_estimate": {
+    "average": 1.60,
+    "low": 1.55,
+    "high": 1.65
+  },
+  "revenue_estimate": {
+    "average": 89500000000,
+    "low": 88000000000,
+    "high": 91000000000
+  },
+  "description": "Next scheduled earnings date with analyst estimates"
+}
+```
+
+This shows the next scheduled earnings report date along with analyst consensus estimates for both EPS and revenue.
+
+**14. Health Check**
 
 Request:
 ```bash
@@ -487,6 +568,13 @@ The MCP server exposes the following tools:
 | `compare_stocks` | Compare two stocks side by side |
 | `predict_stock_price` | Predict future prices using ML ensemble methods |
 | `get_quantitative_analysis` | Get comprehensive quant analysis with investment recommendations |
+| `get_financial_summary` | Get comprehensive financial summary (revenue, profitability, ratios) |
+| `get_financial_metrics` | Get detailed financial metrics (valuation, profitability, growth, dividends) |
+| `get_income_statement` | Get income statement (revenue, expenses, net income) |
+| `get_balance_sheet` | Get balance sheet (assets, liabilities, equity) |
+| `get_cash_flow_statement` | Get cash flow statement (operating, investing, financing) |
+| `get_earnings_history` | Get historical earnings with estimates vs actuals |
+| `get_next_earnings_date` | Get next scheduled earnings date with analyst EPS and revenue estimates |
 
 #### Configuring Claude Desktop
 
@@ -515,11 +603,22 @@ A template configuration file is provided in `mcp_config_example.json` for your 
 
 Once configured, you can ask Claude things like:
 
+**Stock Data:**
 - "What's the current price of AAPL?"
 - "Get me analyst ratings for TSLA"
 - "Compare AAPL and MSFT performance over the last month"
+
+**Analysis:**
 - "Predict the price of NVDA for the next 7 days"
 - "Give me a quantitative analysis of GOOGL"
+
+**Financials:**
+- "Show me Apple's financial summary"
+- "What are Tesla's key financial metrics and ratios?"
+- "Get Microsoft's latest earnings results"
+- "When is Apple's next earnings date?"
+- "Show me the income statement for NVDA"
+- "What's Amazon's profit margin and ROE?"
 
 Claude will automatically use the MarketMind MCP tools to fetch and analyze the data.
 
@@ -970,6 +1069,149 @@ Each recommendation includes:
 
 **Important**: Recommendations are based purely on historical quantitative data and should not be the sole basis for investment decisions.
 
+### Financial Statements and Metrics
+
+Get comprehensive financial data including income statements, balance sheets, cash flow, and key financial metrics.
+
+**Get financial summary:**
+```bash
+python stock_cli.py financials AAPL
+```
+
+Example output:
+```
+=== AAPL Financial Data ===
+
+Apple Inc.
+
+Revenue:
+Total Revenue:      $394,328,000,000
+Revenue/Share:      $24.54
+Revenue Growth:     -2.80%
+
+Profitability:
+Net Income:         $96,995,000,000
+EPS:                $6.13
+Profit Margin:      24.57%
+Operating Margin:   30.74%
+
+Balance Sheet:
+Total Assets:       $352,755,000,000
+Total Debt:         $111,088,000,000
+Total Cash:         $61,555,000,000
+Book Value/Share:   $4.837
+
+Cash Flow:
+Operating CF:       $110,543,000,000
+Free Cash Flow:     $99,584,000,000
+
+Key Ratios:
+P/E Ratio:          29.43
+Price/Book:         46.67
+ROE:                147.25%
+ROA:                27.51%
+Current Ratio:      0.98
+Debt/Equity:        181.18
+```
+
+**Get detailed financial metrics:**
+```bash
+python stock_cli.py financials AAPL --type metrics
+```
+
+This displays comprehensive metrics across five categories:
+- **Valuation Metrics**: Market cap, P/E, PEG, Price/Book, Price/Sales, EV/EBITDA
+- **Profitability Metrics**: Profit margin, Operating margin, ROE, ROA, Gross margin
+- **Financial Health**: Current ratio, Quick ratio, Debt/Equity, Free cash flow
+- **Growth Metrics**: Revenue growth, Earnings growth, EPS
+- **Dividend Metrics**: Dividend rate, Yield, Payout ratio
+
+**Get earnings history:**
+```bash
+python stock_cli.py financials TSLA --type earnings
+```
+
+Shows historical earnings reports with:
+- Analyst estimates vs actual reported EPS
+- Earnings surprise percentage (color-coded: green for beat, red for miss)
+- Date of each earnings report
+
+**Get income statement:**
+```bash
+python stock_cli.py financials MSFT --type income
+```
+
+Get quarterly data instead of annual:
+```bash
+python stock_cli.py financials GOOGL --type income --quarterly
+```
+
+**Get balance sheet:**
+```bash
+python stock_cli.py financials NVDA --type balance
+```
+
+**Get cash flow statement:**
+```bash
+python stock_cli.py financials META --type cashflow --quarterly
+```
+
+**Get next earnings date:**
+```bash
+python stock_cli.py financials AAPL --type next-earnings
+```
+
+Example output:
+```
+=== AAPL Financial Data ===
+
+Next Earnings Date:
+
+📅  Earnings Date:     2024-11-01
+
+EPS Estimates:
+Average:            $1.60
+Low:                $1.55
+High:               $1.65
+
+Revenue Estimates:
+Average:            $89.50B
+Low:                $88.00B
+High:               $91.00B
+```
+
+#### Financial Data Types
+
+- `summary` (default) - High-level overview of revenue, profitability, balance sheet, cash flow, and key ratios
+- `metrics` - Comprehensive financial metrics across all categories
+- `earnings` - Historical earnings with estimates vs actuals
+- `next-earnings` - Next scheduled earnings date with analyst EPS and revenue estimates
+- `income` - Income statement (revenue, expenses, net income)
+- `balance` - Balance sheet (assets, liabilities, equity)
+- `cashflow` - Cash flow statement (operating, investing, financing activities)
+
+#### Understanding Financial Metrics
+
+**Valuation Metrics** - How the market values the company:
+- **P/E Ratio**: Price divided by earnings. Lower may indicate undervaluation
+- **PEG Ratio**: P/E adjusted for growth. < 1 is considered attractive
+- **Price/Book**: Price divided by book value. Useful for asset-heavy companies
+- **EV/EBITDA**: Enterprise value to earnings. Good for comparing companies with different capital structures
+
+**Profitability Metrics** - How efficiently the company generates profit:
+- **Profit Margin**: Net income as % of revenue. Higher is better
+- **ROE (Return on Equity)**: How well company uses shareholder equity. >15% is good
+- **ROA (Return on Assets)**: How efficiently company uses assets. >5% is good
+
+**Financial Health** - Company's ability to meet obligations:
+- **Current Ratio**: Current assets / current liabilities. >1 means can cover short-term debts
+- **Quick Ratio**: Like current ratio but excludes inventory. >1 is healthy
+- **Debt/Equity**: Total debt / shareholder equity. Lower is generally better
+
+**Growth Metrics** - How fast the company is expanding:
+- **Revenue Growth**: Year-over-year revenue increase. Positive is good
+- **Earnings Growth**: Year-over-year earnings increase
+
 ### Compare Two Stock Symbols
 
 Compare two stocks side-by-side to analyze their performance:
@@ -1137,6 +1379,31 @@ python stock_cli.py predict AAPL --days 14
 python stock_cli.py quant TSLA --benchmark QQQ --period 1y
 ```
 
+### Get Financial Summary
+```bash
+python stock_cli.py financials AAPL
+```
+
+### View Financial Metrics
+```bash
+python stock_cli.py financials MSFT --type metrics
+```
+
+### Check Earnings History
+```bash
+python stock_cli.py financials NVDA --type earnings
+```
+
+### Get Next Earnings Date
+```bash
+python stock_cli.py financials TSLA --type next-earnings
+```
+
+### Get Quarterly Income Statement
+```bash
+python stock_cli.py financials GOOGL --type income --quarterly
+```
+
 ## Common Stock Symbols
 
 - **AAPL** - Apple Inc.
@@ -1160,6 +1427,7 @@ MarketMind/
 ├── stock_fetcher.py         # Yahoo Finance data fetcher
 ├── stock_predictor.py       # AI price prediction models
 ├── quant_analysis.py        # Quantitative finance analysis
+├── financial_data.py        # Financial statements and metrics
 ├── stock_visualizer.py      # Chart visualization module
 ├── realtime_monitor.py      # Real-time quote monitoring
 ├── requirements.txt         # Python dependencies

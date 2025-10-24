@@ -16,6 +16,7 @@ from mcp.types import Tool, TextContent
 from stock_fetcher import StockFetcher
 from stock_predictor import StockPredictor
 from quant_analysis import QuantAnalysis
+from financial_data import FinancialData
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -162,6 +163,119 @@ TOOLS = [
             },
             "required": ["symbol"]
         }
+    ),
+    Tool(
+        name="get_income_statement",
+        description="Get income statement showing revenue, expenses, and profitability",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                },
+                "quarterly": {
+                    "type": "boolean",
+                    "description": "Get quarterly data instead of annual (default: false)",
+                    "default": False
+                }
+            },
+            "required": ["symbol"]
+        }
+    ),
+    Tool(
+        name="get_balance_sheet",
+        description="Get balance sheet showing assets, liabilities, and equity",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                },
+                "quarterly": {
+                    "type": "boolean",
+                    "description": "Get quarterly data instead of annual (default: false)",
+                    "default": False
+                }
+            },
+            "required": ["symbol"]
+        }
+    ),
+    Tool(
+        name="get_cash_flow_statement",
+        description="Get cash flow statement showing operating, investing, and financing activities",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                },
+                "quarterly": {
+                    "type": "boolean",
+                    "description": "Get quarterly data instead of annual (default: false)",
+                    "default": False
+                }
+            },
+            "required": ["symbol"]
+        }
+    ),
+    Tool(
+        name="get_financial_metrics",
+        description="Get key financial metrics including valuation ratios, profitability, financial health, growth, and dividend metrics",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                }
+            },
+            "required": ["symbol"]
+        }
+    ),
+    Tool(
+        name="get_earnings_history",
+        description="Get historical earnings data with estimates vs actual results",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                }
+            },
+            "required": ["symbol"]
+        }
+    ),
+    Tool(
+        name="get_financial_summary",
+        description="Get comprehensive financial summary including revenue, profitability, balance sheet, cash flow, and key ratios",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                }
+            },
+            "required": ["symbol"]
+        }
+    ),
+    Tool(
+        name="get_next_earnings_date",
+        description="Get next scheduled earnings date with analyst EPS and revenue estimates",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock ticker symbol"
+                }
+            },
+            "required": ["symbol"]
+        }
     )
 ]
 
@@ -190,6 +304,20 @@ async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             return await handle_predict_price(arguments)
         elif name == "get_quantitative_analysis":
             return await handle_quant_analysis(arguments)
+        elif name == "get_income_statement":
+            return await handle_income_statement(arguments)
+        elif name == "get_balance_sheet":
+            return await handle_balance_sheet(arguments)
+        elif name == "get_cash_flow_statement":
+            return await handle_cash_flow(arguments)
+        elif name == "get_financial_metrics":
+            return await handle_financial_metrics(arguments)
+        elif name == "get_earnings_history":
+            return await handle_earnings_history(arguments)
+        elif name == "get_financial_summary":
+            return await handle_financial_summary(arguments)
+        elif name == "get_next_earnings_date":
+            return await handle_next_earnings(arguments)
         else:
             raise ValueError(f"Unknown tool: {name}")
     except Exception as e:
@@ -424,6 +552,149 @@ async def handle_quant_analysis(arguments: dict) -> list[TextContent]:
     return [TextContent(
         type="text",
         text=json.dumps(analysis, indent=2, default=str)
+    )]
+
+
+async def handle_income_statement(arguments: dict) -> list[TextContent]:
+    """Get income statement."""
+    symbol = arguments["symbol"].upper()
+    quarterly = arguments.get("quarterly", False)
+    logger.info(f"Getting income statement for {symbol} ({'quarterly' if quarterly else 'annual'})")
+
+    financials = FinancialData(symbol)
+    result = financials.get_income_statement(quarterly=quarterly)
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
+    )]
+
+
+async def handle_balance_sheet(arguments: dict) -> list[TextContent]:
+    """Get balance sheet."""
+    symbol = arguments["symbol"].upper()
+    quarterly = arguments.get("quarterly", False)
+    logger.info(f"Getting balance sheet for {symbol} ({'quarterly' if quarterly else 'annual'})")
+
+    financials = FinancialData(symbol)
+    result = financials.get_balance_sheet(quarterly=quarterly)
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
+    )]
+
+
+async def handle_cash_flow(arguments: dict) -> list[TextContent]:
+    """Get cash flow statement."""
+    symbol = arguments["symbol"].upper()
+    quarterly = arguments.get("quarterly", False)
+    logger.info(f"Getting cash flow for {symbol} ({'quarterly' if quarterly else 'annual'})")
+
+    financials = FinancialData(symbol)
+    result = financials.get_cash_flow(quarterly=quarterly)
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
+    )]
+
+
+async def handle_financial_metrics(arguments: dict) -> list[TextContent]:
+    """Get financial metrics."""
+    symbol = arguments["symbol"].upper()
+    logger.info(f"Getting financial metrics for {symbol}")
+
+    financials = FinancialData(symbol)
+    result = financials.get_key_metrics()
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
+    )]
+
+
+async def handle_earnings_history(arguments: dict) -> list[TextContent]:
+    """Get earnings history."""
+    symbol = arguments["symbol"].upper()
+    logger.info(f"Getting earnings history for {symbol}")
+
+    financials = FinancialData(symbol)
+    result = financials.get_earnings_history()
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
+    )]
+
+
+async def handle_financial_summary(arguments: dict) -> list[TextContent]:
+    """Get financial summary."""
+    symbol = arguments["symbol"].upper()
+    logger.info(f"Getting financial summary for {symbol}")
+
+    financials = FinancialData(symbol)
+    result = financials.get_financial_summary()
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
+    )]
+
+
+async def handle_next_earnings(arguments: dict) -> list[TextContent]:
+    """Get next earnings date."""
+    symbol = arguments["symbol"].upper()
+    logger.info(f"Getting next earnings date for {symbol}")
+
+    financials = FinancialData(symbol)
+    result = financials.get_next_earnings()
+
+    if 'error' in result:
+        return [TextContent(
+            type="text",
+            text=f"Error: {result['error']}"
+        )]
+
+    return [TextContent(
+        type="text",
+        text=json.dumps(result, indent=2)
     )]
 
 

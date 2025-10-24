@@ -12,6 +12,7 @@ from stock_visualizer import StockVisualizer
 from realtime_monitor import RealtimeMonitor
 from stock_predictor import StockPredictor
 from quant_analysis import QuantAnalysis
+from financial_data import FinancialData
 from colorama import Fore, Style, init
 
 # Initialize colorama
@@ -596,6 +597,222 @@ def search_ticker(symbols: list, detailed: bool = False):
     print()
 
 
+def show_financials(symbol: str, statement_type: str = 'summary', quarterly: bool = False):
+    """Display financial statements and metrics."""
+    financials = FinancialData(symbol)
+
+    print(f"\n{Fore.CYAN}{Style.BRIGHT}=== {symbol} Financial Data ==={Style.RESET_ALL}\n")
+
+    if statement_type == 'summary':
+        result = financials.get_financial_summary()
+        if 'error' in result:
+            print(f"{Fore.RED}Error: {result['error']}{Style.RESET_ALL}\n")
+            return
+
+        print(f"{Fore.WHITE}{Style.BRIGHT}{result.get('company_name', symbol)}{Style.RESET_ALL}\n")
+
+        # Revenue
+        print(f"{Fore.WHITE}{Style.BRIGHT}Revenue:{Style.RESET_ALL}")
+        rev = result.get('revenue', {})
+        if rev.get('total_revenue') != 'N/A':
+            print(f"Total Revenue:      ${rev.get('total_revenue', 'N/A'):,}")
+        print(f"Revenue/Share:      ${rev.get('revenue_per_share', 'N/A')}")
+        print(f"Revenue Growth:     {rev.get('revenue_growth', 'N/A')}\n")
+
+        # Profitability
+        print(f"{Fore.WHITE}{Style.BRIGHT}Profitability:{Style.RESET_ALL}")
+        prof = result.get('profitability', {})
+        if prof.get('net_income') != 'N/A':
+            print(f"Net Income:         ${prof.get('net_income', 'N/A'):,}")
+        print(f"EPS:                ${prof.get('earnings_per_share', 'N/A')}")
+        print(f"Profit Margin:      {prof.get('profit_margin', 'N/A')}")
+        print(f"Operating Margin:   {prof.get('operating_margin', 'N/A')}\n")
+
+        # Balance Sheet
+        print(f"{Fore.WHITE}{Style.BRIGHT}Balance Sheet:{Style.RESET_ALL}")
+        bal = result.get('balance_sheet', {})
+        if bal.get('total_assets') != 'N/A':
+            print(f"Total Assets:       ${bal.get('total_assets', 'N/A'):,}")
+        if bal.get('total_debt') != 'N/A':
+            print(f"Total Debt:         ${bal.get('total_debt', 'N/A'):,}")
+        if bal.get('total_cash') != 'N/A':
+            print(f"Total Cash:         ${bal.get('total_cash', 'N/A'):,}")
+        print(f"Book Value/Share:   ${bal.get('book_value_per_share', 'N/A')}\n")
+
+        # Cash Flow
+        print(f"{Fore.WHITE}{Style.BRIGHT}Cash Flow:{Style.RESET_ALL}")
+        cf = result.get('cash_flow', {})
+        if cf.get('operating_cash_flow') != 'N/A':
+            print(f"Operating CF:       ${cf.get('operating_cash_flow', 'N/A'):,}")
+        if cf.get('free_cash_flow') != 'N/A':
+            print(f"Free Cash Flow:     ${cf.get('free_cash_flow', 'N/A'):,}\n")
+
+        # Key Ratios
+        print(f"{Fore.WHITE}{Style.BRIGHT}Key Ratios:{Style.RESET_ALL}")
+        ratios = result.get('key_ratios', {})
+        print(f"P/E Ratio:          {ratios.get('pe_ratio', 'N/A')}")
+        print(f"Price/Book:         {ratios.get('price_to_book', 'N/A')}")
+        print(f"ROE:                {ratios.get('return_on_equity', 'N/A')}")
+        print(f"ROA:                {ratios.get('return_on_assets', 'N/A')}")
+        print(f"Current Ratio:      {ratios.get('current_ratio', 'N/A')}")
+        print(f"Debt/Equity:        {ratios.get('debt_to_equity', 'N/A')}\n")
+
+    elif statement_type == 'metrics':
+        result = financials.get_key_metrics()
+        if 'error' in result:
+            print(f"{Fore.RED}Error: {result['error']}{Style.RESET_ALL}\n")
+            return
+
+        # Valuation Metrics
+        print(f"{Fore.WHITE}{Style.BRIGHT}Valuation Metrics:{Style.RESET_ALL}")
+        val = result.get('valuation_metrics', {})
+        for key, value in val.items():
+            label = key.replace('_', ' ').title()
+            print(f"{label:25s} {value}")
+
+        # Profitability Metrics
+        print(f"\n{Fore.WHITE}{Style.BRIGHT}Profitability Metrics:{Style.RESET_ALL}")
+        prof = result.get('profitability_metrics', {})
+        for key, value in prof.items():
+            label = key.replace('_', ' ').title()
+            if isinstance(value, float):
+                value = f"{value * 100:.2f}%"
+            print(f"{label:25s} {value}")
+
+        # Financial Health
+        print(f"\n{Fore.WHITE}{Style.BRIGHT}Financial Health:{Style.RESET_ALL}")
+        health = result.get('financial_health', {})
+        for key, value in health.items():
+            label = key.replace('_', ' ').title()
+            print(f"{label:25s} {value}")
+
+        # Growth Metrics
+        print(f"\n{Fore.WHITE}{Style.BRIGHT}Growth Metrics:{Style.RESET_ALL}")
+        growth = result.get('growth_metrics', {})
+        for key, value in growth.items():
+            label = key.replace('_', ' ').title()
+            if isinstance(value, float) and 'growth' in key:
+                value = f"{value * 100:.2f}%"
+            print(f"{label:25s} {value}")
+
+        # Dividend Metrics
+        print(f"\n{Fore.WHITE}{Style.BRIGHT}Dividend Metrics:{Style.RESET_ALL}")
+        div = result.get('dividend_metrics', {})
+        for key, value in div.items():
+            label = key.replace('_', ' ').title()
+            if isinstance(value, float) and 'yield' in key:
+                value = f"{value * 100:.2f}%"
+            elif isinstance(value, float) and 'ratio' in key:
+                value = f"{value * 100:.2f}%"
+            print(f"{label:25s} {value}")
+        print()
+
+    elif statement_type == 'earnings':
+        result = financials.get_earnings_history()
+        if 'error' in result:
+            print(f"{Fore.RED}Error: {result['error']}{Style.RESET_ALL}\n")
+            return
+
+        print(f"{Fore.WHITE}{Style.BRIGHT}Earnings History:{Style.RESET_ALL}\n")
+        print(f"{'Date':<12} {'Estimate':>12} {'Actual':>12} {'Surprise':>12}")
+        print("-" * 50)
+
+        for earning in result.get('earnings_history', []):
+            date = earning['date']
+            estimate = f"${earning['eps_estimate']:.2f}" if earning['eps_estimate'] is not None else 'N/A'
+            actual = f"${earning['reported_eps']:.2f}" if earning['reported_eps'] is not None else 'N/A'
+            surprise = f"{earning['surprise_pct']:.1f}%" if earning['surprise_pct'] is not None else 'N/A'
+
+            # Color code the surprise
+            if earning['surprise_pct'] is not None:
+                if earning['surprise_pct'] > 0:
+                    surprise = f"{Fore.GREEN}{surprise}{Style.RESET_ALL}"
+                elif earning['surprise_pct'] < 0:
+                    surprise = f"{Fore.RED}{surprise}{Style.RESET_ALL}"
+
+            print(f"{date:<12} {estimate:>12} {actual:>12} {surprise:>12}")
+        print()
+
+    elif statement_type == 'next-earnings':
+        result = financials.get_next_earnings()
+        if 'error' in result:
+            print(f"{Fore.RED}Error: {result['error']}{Style.RESET_ALL}\n")
+            return
+
+        print(f"{Fore.WHITE}{Style.BRIGHT}Next Earnings Date:{Style.RESET_ALL}\n")
+
+        if result.get('next_earnings_date'):
+            print(f"📅  Earnings Date:     {Fore.CYAN}{result['next_earnings_date']}{Style.RESET_ALL}\n")
+        else:
+            print(f"{Fore.YELLOW}No upcoming earnings date available{Style.RESET_ALL}\n")
+            return
+
+        # Earnings estimates
+        eps_est = result.get('earnings_estimate', {})
+        if eps_est.get('average') is not None:
+            print(f"{Fore.WHITE}{Style.BRIGHT}EPS Estimates:{Style.RESET_ALL}")
+            print(f"Average:            ${eps_est['average']:.2f}")
+            if eps_est.get('low') is not None:
+                print(f"Low:                ${eps_est['low']:.2f}")
+            if eps_est.get('high') is not None:
+                print(f"High:               ${eps_est['high']:.2f}")
+            print()
+
+        # Revenue estimates
+        rev_est = result.get('revenue_estimate', {})
+        if rev_est.get('average') is not None:
+            print(f"{Fore.WHITE}{Style.BRIGHT}Revenue Estimates:{Style.RESET_ALL}")
+            if rev_est['average'] >= 1_000_000_000:
+                print(f"Average:            ${rev_est['average'] / 1_000_000_000:.2f}B")
+                if rev_est.get('low') is not None:
+                    print(f"Low:                ${rev_est['low'] / 1_000_000_000:.2f}B")
+                if rev_est.get('high') is not None:
+                    print(f"High:               ${rev_est['high'] / 1_000_000_000:.2f}B")
+            elif rev_est['average'] >= 1_000_000:
+                print(f"Average:            ${rev_est['average'] / 1_000_000:.2f}M")
+                if rev_est.get('low') is not None:
+                    print(f"Low:                ${rev_est['low'] / 1_000_000:.2f}M")
+                if rev_est.get('high') is not None:
+                    print(f"High:               ${rev_est['high'] / 1_000_000:.2f}M")
+            else:
+                print(f"Average:            ${rev_est['average']:,.0f}")
+                if rev_est.get('low') is not None:
+                    print(f"Low:                ${rev_est['low']:,.0f}")
+                if rev_est.get('high') is not None:
+                    print(f"High:               ${rev_est['high']:,.0f}")
+            print()
+
+    else:
+        # For income, balance, cashflow statements
+        period_str = "Quarterly" if quarterly else "Annual"
+        print(f"{Fore.YELLOW}Fetching {period_str} {statement_type.title()} Statement...{Style.RESET_ALL}\n")
+
+        if statement_type == 'income':
+            result = financials.get_income_statement(quarterly=quarterly)
+        elif statement_type == 'balance':
+            result = financials.get_balance_sheet(quarterly=quarterly)
+        elif statement_type == 'cashflow':
+            result = financials.get_cash_flow(quarterly=quarterly)
+        else:
+            print(f"{Fore.RED}Unknown statement type: {statement_type}{Style.RESET_ALL}\n")
+            return
+
+        if 'error' in result:
+            print(f"{Fore.RED}Error: {result['error']}{Style.RESET_ALL}\n")
+            return
+
+        print(f"{Fore.GREEN}{result.get('description', '')}{Style.RESET_ALL}\n")
+
+        data = result.get('data', {})
+        if not data:
+            print(f"{Fore.YELLOW}No data available{Style.RESET_ALL}\n")
+            return
+
+        # Display in simplified format
+        print(f"{Fore.CYAN}Available periods: {', '.join(data.keys())}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Use the API for detailed financial statement data.{Style.RESET_ALL}\n")
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -738,6 +955,15 @@ Valid comparison types: price, performance
     quant_parser.add_argument('--period', '-p', type=str, default='1y',
                              help='Analysis period (default: 1y)')
 
+    # Financials command
+    financials_parser = subparsers.add_parser('financials', help='Get financial statements and metrics')
+    financials_parser.add_argument('symbol', type=str, help='Stock ticker symbol (e.g., AAPL)')
+    financials_parser.add_argument('--type', '-t', type=str, default='summary',
+                                   choices=['summary', 'income', 'balance', 'cashflow', 'metrics', 'earnings', 'next-earnings'],
+                                   help='Type of financial data (default: summary)')
+    financials_parser.add_argument('--quarterly', '-q', action='store_true',
+                                   help='Get quarterly data instead of annual (for income, balance, cashflow)')
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -764,6 +990,8 @@ Valid comparison types: price, performance
             predict_price(args.symbol, args.days, args.method)
         elif args.command == 'quant':
             show_quant_analysis(args.symbol, args.benchmark, args.period)
+        elif args.command == 'financials':
+            show_financials(args.symbol, args.type, args.quarterly)
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}Operation cancelled by user.{Style.RESET_ALL}")
         sys.exit(0)

@@ -14,6 +14,7 @@ import pandas as pd
 from stock_fetcher import StockFetcher
 from stock_predictor import StockPredictor
 from quant_analysis import QuantAnalysis
+from financial_data import FinancialData
 from stock_cli import DEFAULT_MARKET_SYMBOLS
 
 # Initialize FastAPI app
@@ -170,6 +171,13 @@ async def root():
             "compare": "/compare/{symbol1}/{symbol2}",
             "predict": "/predict/{symbol}",
             "quant": "/quant/{symbol}",
+            "financials_income": "/financials/{symbol}/income",
+            "financials_balance": "/financials/{symbol}/balance",
+            "financials_cashflow": "/financials/{symbol}/cashflow",
+            "financials_metrics": "/financials/{symbol}/metrics",
+            "financials_earnings": "/financials/{symbol}/earnings",
+            "financials_next_earnings": "/financials/{symbol}/next-earnings",
+            "financials_summary": "/financials/{symbol}/summary",
             "health": "/health"
         }
     }
@@ -415,6 +423,171 @@ async def get_quant_analysis(
         analysis = quant.get_comprehensive_analysis()
 
         return analysis
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/income", tags=["Financials"])
+async def get_income_statement(
+    symbol: str,
+    quarterly: bool = Query(False, description="Get quarterly data instead of annual")
+):
+    """
+    Get income statement for a stock.
+
+    - **symbol**: Stock ticker symbol
+    - **quarterly**: If true, returns quarterly data; otherwise annual data
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_income_statement(quarterly=quarterly)
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/balance", tags=["Financials"])
+async def get_balance_sheet(
+    symbol: str,
+    quarterly: bool = Query(False, description="Get quarterly data instead of annual")
+):
+    """
+    Get balance sheet for a stock.
+
+    - **symbol**: Stock ticker symbol
+    - **quarterly**: If true, returns quarterly data; otherwise annual data
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_balance_sheet(quarterly=quarterly)
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/cashflow", tags=["Financials"])
+async def get_cash_flow(
+    symbol: str,
+    quarterly: bool = Query(False, description="Get quarterly data instead of annual")
+):
+    """
+    Get cash flow statement for a stock.
+
+    - **symbol**: Stock ticker symbol
+    - **quarterly**: If true, returns quarterly data; otherwise annual data
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_cash_flow(quarterly=quarterly)
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/metrics", tags=["Financials"])
+async def get_key_metrics(symbol: str):
+    """
+    Get key financial metrics and ratios for a stock.
+
+    Returns valuation, profitability, financial health, growth, and dividend metrics.
+
+    - **symbol**: Stock ticker symbol
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_key_metrics()
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/earnings", tags=["Financials"])
+async def get_earnings_history(symbol: str):
+    """
+    Get historical earnings data with estimates vs actual.
+
+    - **symbol**: Stock ticker symbol
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_earnings_history()
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/summary", tags=["Financials"])
+async def get_financial_summary(symbol: str):
+    """
+    Get comprehensive financial summary.
+
+    Returns revenue, profitability, balance sheet, cash flow, and key ratios.
+
+    - **symbol**: Stock ticker symbol
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_financial_summary()
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/financials/{symbol}/next-earnings", tags=["Financials"])
+async def get_next_earnings_date(symbol: str):
+    """
+    Get next earnings date and analyst estimates.
+
+    Returns the next scheduled earnings date with EPS and revenue estimates.
+
+    - **symbol**: Stock ticker symbol
+    """
+    try:
+        financials = FinancialData(symbol.upper())
+        result = financials.get_next_earnings()
+
+        if 'error' in result:
+            raise HTTPException(status_code=404, detail=result['error'])
+
+        return result
     except HTTPException:
         raise
     except Exception as e:
