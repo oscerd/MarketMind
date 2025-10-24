@@ -1,0 +1,3 @@
+"""
+MarketMind Test Suite
+"""

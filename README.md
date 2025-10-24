@@ -32,6 +32,93 @@ cd MarketMind
 pip install -r requirements.txt
 ```
 
+## Testing
+
+MarketMind includes a comprehensive test suite using pytest.
+
+### Install Test Dependencies
+
+**Option 1:** Install only production dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+**Option 2:** Install development dependencies (includes tests and code quality tools):
+```bash
+pip install -r requirements-dev.txt
+```
+
+**Option 3:** Install test dependencies manually:
+```bash
+pip install pytest pytest-cov pytest-mock httpx
+```
+
+### Running Tests
+
+**Quick Start - Using the test runner script:**
+```bash
+# Run all tests
+./run_tests.sh
+
+# Run with coverage report
+./run_tests.sh cov
+
+# Run specific test file
+./run_tests.sh file tests/test_api.py
+
+# See all options
+./run_tests.sh help
+```
+
+**Manual pytest commands:**
+```bash
+# Run all tests
+pytest
+
+# Run tests with coverage report (requires pytest-cov)
+pytest --cov=src --cov-report=html
+
+# Run specific test file
+pytest tests/test_financial_data.py
+
+# Run tests with verbose output
+pytest -v
+
+# Run only unit tests
+pytest -m unit
+```
+
+### Test Structure
+
+```
+tests/
+├── __init__.py
+├── conftest.py              # Shared fixtures
+├── test_financial_data.py   # Financial data tests
+├── test_quant_analysis.py   # Quantitative analysis tests
+└── test_api.py              # API endpoint tests
+```
+
+### Coverage
+
+After running tests with coverage, open `htmlcov/index.html` in your browser to see detailed coverage reports.
+
+### Writing New Tests
+
+Tests use pytest fixtures defined in `conftest.py`:
+- `sample_stock_data` - Mock stock price data
+- `sample_earnings_data` - Mock earnings data
+- `sample_quote_info` - Mock quote information
+- `sample_financial_metrics` - Mock financial metrics
+
+Example test:
+```python
+def test_get_next_earnings(sample_calendar_dict):
+    fd = FinancialData('TEST')
+    result = fd.get_next_earnings()
+    assert result['symbol'] == 'TEST'
+```
+
 ## Usage
 
 This project provides three interfaces:
@@ -48,16 +135,16 @@ All interfaces include **AI-powered price prediction** using machine learning mo
 Start the API server:
 ```bash
 # Basic start
-python api.py
+python -m src.api
 
 # With custom host and port
-uvicorn api:app --host 0.0.0.0 --port 8080
+uvicorn src.api:app --host 0.0.0.0 --port 8080
 
 # With auto-reload (for development)
-uvicorn api:app --reload
+uvicorn src.api:app --reload
 
 # With logging
-uvicorn api:app --log-level debug
+uvicorn src.api:app --log-level debug
 ```
 
 The API will be available at `http://localhost:8000`
@@ -502,10 +589,10 @@ For production use:
 pip install gunicorn
 
 # Run with gunicorn
-gunicorn api:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+gunicorn src.api:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 
 # Or with uvicorn
-uvicorn api:app --host 0.0.0.0 --port 8000 --workers 4
+uvicorn src.api:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 **Docker Deployment**
@@ -546,7 +633,7 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how AI as
 Start the MCP server using Python:
 
 ```bash
-python mcp_server.py
+python -m src.mcp_server
 ```
 
 Or use it with the MCP Python SDK:
@@ -589,13 +676,14 @@ To use MarketMind with Claude Desktop, add this configuration to your Claude Des
   "mcpServers": {
     "marketmind": {
       "command": "python",
-      "args": ["/absolute/path/to/MarketMind/mcp_server.py"]
+      "args": ["-m", "src.mcp_server"],
+      "cwd": "/absolute/path/to/MarketMind"
     }
   }
 }
 ```
 
-Replace `/absolute/path/to/MarketMind/` with the actual path to your MarketMind installation.
+Replace `/absolute/path/to/MarketMind` with the actual path to your MarketMind installation directory.
 
 A template configuration file is provided in `mcp_config_example.json` for your reference.
 
@@ -651,7 +739,7 @@ The CLI has eight main commands: `quote`, `chart`, `monitor`, `search`, `compare
 Get the current stock price and key information:
 
 ```bash
-python stock_cli.py quote AAPL
+python -m src.stock_cli quote AAPL
 ```
 
 Example output:
@@ -675,7 +763,7 @@ Search for detailed information about one or more ticker symbols:
 
 **Search for a single ticker:**
 ```bash
-python stock_cli.py search AAPL
+python -m src.stock_cli search AAPL
 ```
 
 Example output:
@@ -695,12 +783,12 @@ Country: United States
 
 **Search for multiple tickers:**
 ```bash
-python stock_cli.py search AAPL GOOGL MSFT
+python -m src.stock_cli search AAPL GOOGL MSFT
 ```
 
 **Search with detailed information (includes company description and website):**
 ```bash
-python stock_cli.py search TSLA --detailed
+python -m src.stock_cli search TSLA --detailed
 ```
 
 This will display additional information including:
@@ -713,7 +801,7 @@ View analyst recommendations, upgrades, and downgrades:
 
 **Get current analyst ratings and recent activity:**
 ```bash
-python stock_cli.py analyst AAPL
+python -m src.stock_cli analyst AAPL
 ```
 
 Example output:
@@ -744,7 +832,7 @@ Recent Upgrades/Downgrades:
 
 **View more history:**
 ```bash
-python stock_cli.py analyst TSLA --limit 50
+python -m src.stock_cli analyst TSLA --limit 50
 ```
 
 The analyst command shows:
@@ -756,7 +844,7 @@ The analyst command shows:
 
 **Get market-wide analyst changes:**
 ```bash
-python stock_cli.py analyst market
+python -m src.stock_cli analyst market
 ```
 
 This scans major stocks across different sectors and shows all analyst rating changes from today:
@@ -783,7 +871,7 @@ Found 5 analyst action(s)
 
 **View changes from the last 3 days:**
 ```bash
-python stock_cli.py analyst market --days 3
+python -m src.stock_cli analyst market --days 3
 ```
 
 The market scan covers 56 major stocks across sectors including:
@@ -800,7 +888,7 @@ Use machine learning to predict future stock prices based on historical data:
 
 **Ensemble prediction (combines multiple ML methods - recommended):**
 ```bash
-python stock_cli.py predict AAPL
+python -m src.stock_cli predict AAPL
 ```
 
 Example output:
@@ -827,13 +915,13 @@ Methods Used: Linear Regression, Moving Average, Advanced Multi-Feature
 **Predict with specific method:**
 ```bash
 # Linear regression
-python stock_cli.py predict TSLA --method linear --days 14
+python -m src.stock_cli predict TSLA --method linear --days 14
 
 # Moving average
-python stock_cli.py predict GOOGL --method ma --days 5
+python -m src.stock_cli predict GOOGL --method ma --days 5
 
 # Advanced multi-feature
-python stock_cli.py predict NVDA --method advanced --days 10
+python -m src.stock_cli predict NVDA --method advanced --days 10
 ```
 
 **Available Methods:**
@@ -856,7 +944,7 @@ Perform professional-grade quantitative analysis with risk metrics, performance 
 
 **Basic quantitative analysis:**
 ```bash
-python stock_cli.py quant AAPL
+python -m src.stock_cli quant AAPL
 ```
 
 Example output:
@@ -938,12 +1026,12 @@ For detailed explanations of all metrics, see the comprehensive glossary below.
 
 **Analysis with custom benchmark:**
 ```bash
-python stock_cli.py quant TSLA --benchmark QQQ --period 2y
+python -m src.stock_cli quant TSLA --benchmark QQQ --period 2y
 ```
 
 **Custom analysis period:**
 ```bash
-python stock_cli.py quant NVDA --period 6mo
+python -m src.stock_cli quant NVDA --period 6mo
 ```
 
 **Quantitative Metrics Glossary:**
@@ -1075,7 +1163,7 @@ Get comprehensive financial data including income statements, balance sheets, ca
 
 **Get financial summary:**
 ```bash
-python stock_cli.py financials AAPL
+python -m src.stock_cli financials AAPL
 ```
 
 Example output:
@@ -1116,7 +1204,7 @@ Debt/Equity:        181.18
 
 **Get detailed financial metrics:**
 ```bash
-python stock_cli.py financials AAPL --type metrics
+python -m src.stock_cli financials AAPL --type metrics
 ```
 
 This displays comprehensive metrics across five categories:
@@ -1128,7 +1216,7 @@ This displays comprehensive metrics across five categories:
 
 **Get earnings history:**
 ```bash
-python stock_cli.py financials TSLA --type earnings
+python -m src.stock_cli financials TSLA --type earnings
 ```
 
 Shows historical earnings reports with:
@@ -1138,27 +1226,27 @@ Shows historical earnings reports with:
 
 **Get income statement:**
 ```bash
-python stock_cli.py financials MSFT --type income
+python -m src.stock_cli financials MSFT --type income
 ```
 
 Get quarterly data instead of annual:
 ```bash
-python stock_cli.py financials GOOGL --type income --quarterly
+python -m src.stock_cli financials GOOGL --type income --quarterly
 ```
 
 **Get balance sheet:**
 ```bash
-python stock_cli.py financials NVDA --type balance
+python -m src.stock_cli financials NVDA --type balance
 ```
 
 **Get cash flow statement:**
 ```bash
-python stock_cli.py financials META --type cashflow --quarterly
+python -m src.stock_cli financials META --type cashflow --quarterly
 ```
 
 **Get next earnings date:**
 ```bash
-python stock_cli.py financials AAPL --type next-earnings
+python -m src.stock_cli financials AAPL --type next-earnings
 ```
 
 Example output:
@@ -1218,21 +1306,21 @@ Compare two stocks side-by-side to analyze their performance:
 
 **Price comparison (dual y-axes for different price scales):**
 ```bash
-python stock_cli.py compare AAPL MSFT --period 1mo
+python -m src.stock_cli compare AAPL MSFT --period 1mo
 ```
 
 This shows both stocks' actual prices on the same chart with separate y-axes, along with volume comparison.
 
 **Performance comparison (normalized percentage change):**
 ```bash
-python stock_cli.py compare TSLA NVDA --period 6mo --type performance
+python -m src.stock_cli compare TSLA NVDA --period 6mo --type performance
 ```
 
 This normalizes both stocks to show percentage change from the starting point, making it easy to compare relative performance regardless of price differences.
 
 **Compare with custom period:**
 ```bash
-python stock_cli.py compare GOOGL AMZN --period 1y --type price
+python -m src.stock_cli compare GOOGL AMZN --period 1y --type price
 ```
 
 #### Comparison Types
@@ -1246,27 +1334,27 @@ Show interactive charts with various options:
 
 **Basic line chart (default - 1 month):**
 ```bash
-python stock_cli.py chart AAPL
+python -m src.stock_cli chart AAPL
 ```
 
 **Candlestick chart for 5 days:**
 ```bash
-python stock_cli.py chart GOOGL --period 5d --type candlestick
+python -m src.stock_cli chart GOOGL --period 5d --type candlestick
 ```
 
 **Intraday chart for today:**
 ```bash
-python stock_cli.py chart TSLA --period 1d --type intraday
+python -m src.stock_cli chart TSLA --period 1d --type intraday
 ```
 
 **Comparison chart (price + volume subplots):**
 ```bash
-python stock_cli.py chart AAPL --period 5d --type comparison
+python -m src.stock_cli chart AAPL --period 5d --type comparison
 ```
 
 **Custom period:**
 ```bash
-python stock_cli.py chart MSFT --period 6mo --type line
+python -m src.stock_cli chart MSFT --period 6mo --type line
 ```
 
 #### Available Options
@@ -1291,7 +1379,7 @@ python stock_cli.py chart MSFT --period 6mo --type line
 **Intervals:**
 Data interval is auto-selected based on the period, but you can specify manually:
 ```bash
-python stock_cli.py chart AAPL --period 1d --interval 5m
+python -m src.stock_cli chart AAPL --period 1d --interval 5m
 ```
 
 Valid intervals: `1m`, `2m`, `5m`, `15m`, `30m`, `60m`, `90m`, `1d`, `5d`, `1wk`, `1mo`, `3mo`
@@ -1302,12 +1390,12 @@ Monitor stock prices in real-time with auto-refresh:
 
 **Monitor with default 5-second refresh:**
 ```bash
-python stock_cli.py monitor AAPL
+python -m src.stock_cli monitor AAPL
 ```
 
 **Monitor with custom refresh interval (10 seconds):**
 ```bash
-python stock_cli.py monitor AMZN --refresh 10
+python -m src.stock_cli monitor AMZN --refresh 10
 ```
 
 Press `Ctrl+C` to stop monitoring.
@@ -1316,92 +1404,92 @@ Press `Ctrl+C` to stop monitoring.
 
 ### Quick Price Check
 ```bash
-python stock_cli.py quote MSFT
+python -m src.stock_cli quote MSFT
 ```
 
 ### View Weekly Performance
 ```bash
-python stock_cli.py chart NVDA --period 5d --type candlestick
+python -m src.stock_cli chart NVDA --period 5d --type candlestick
 ```
 
 ### Monitor Stock During Trading Hours
 ```bash
-python stock_cli.py monitor TSLA --refresh 3
+python -m src.stock_cli monitor TSLA --refresh 3
 ```
 
 ### View Long-term Trends
 ```bash
-python stock_cli.py chart AAPL --period 5y --type line
+python -m src.stock_cli chart AAPL --period 5y --type line
 ```
 
 ### Intraday Trading Analysis
 ```bash
-python stock_cli.py chart SPY --period 1d --type intraday
+python -m src.stock_cli chart SPY --period 1d --type intraday
 ```
 
 ### View Price and Volume Comparison
 ```bash
-python stock_cli.py chart AAPL --period 1mo --type comparison
+python -m src.stock_cli chart AAPL --period 1mo --type comparison
 ```
 
 ### Search for Stock Information
 ```bash
-python stock_cli.py search NVDA --detailed
+python -m src.stock_cli search NVDA --detailed
 ```
 
 ### Compare Tech Giants Performance
 ```bash
-python stock_cli.py compare AAPL MSFT --period 1y --type performance
+python -m src.stock_cli compare AAPL MSFT --period 1y --type performance
 ```
 
 ### Compare Different Sectors
 ```bash
-python stock_cli.py compare TSLA XOM --period 6mo --type price
+python -m src.stock_cli compare TSLA XOM --period 6mo --type price
 ```
 
 ### Check Analyst Ratings
 ```bash
-python stock_cli.py analyst NVDA
+python -m src.stock_cli analyst NVDA
 ```
 
 ### See Today's Market-Wide Analyst Changes
 ```bash
-python stock_cli.py analyst market
+python -m src.stock_cli analyst market
 ```
 
 ### Predict Future Prices
 ```bash
-python stock_cli.py predict AAPL --days 14
+python -m src.stock_cli predict AAPL --days 14
 ```
 
 ### Quantitative Analysis
 ```bash
-python stock_cli.py quant TSLA --benchmark QQQ --period 1y
+python -m src.stock_cli quant TSLA --benchmark QQQ --period 1y
 ```
 
 ### Get Financial Summary
 ```bash
-python stock_cli.py financials AAPL
+python -m src.stock_cli financials AAPL
 ```
 
 ### View Financial Metrics
 ```bash
-python stock_cli.py financials MSFT --type metrics
+python -m src.stock_cli financials MSFT --type metrics
 ```
 
 ### Check Earnings History
 ```bash
-python stock_cli.py financials NVDA --type earnings
+python -m src.stock_cli financials NVDA --type earnings
 ```
 
 ### Get Next Earnings Date
 ```bash
-python stock_cli.py financials TSLA --type next-earnings
+python -m src.stock_cli financials TSLA --type next-earnings
 ```
 
 ### Get Quarterly Income Statement
 ```bash
-python stock_cli.py financials GOOGL --type income --quarterly
+python -m src.stock_cli financials GOOGL --type income --quarterly
 ```
 
 ## Common Stock Symbols
@@ -1420,17 +1508,29 @@ python stock_cli.py financials GOOGL --type income --quarterly
 
 ```
 MarketMind/
-├── stock_cli.py             # Main CLI application
-├── api.py                   # REST API server (FastAPI)
-├── mcp_server.py            # MCP server for AI assistant integration
+├── src/                     # Source code directory
+│   ├── __init__.py          # Package initialization
+│   ├── stock_cli.py         # Main CLI application
+│   ├── api.py               # REST API server (FastAPI)
+│   ├── mcp_server.py        # MCP server for AI assistant integration
+│   ├── stock_fetcher.py     # Yahoo Finance data fetcher
+│   ├── stock_predictor.py   # AI price prediction models
+│   ├── quant_analysis.py    # Quantitative finance analysis
+│   ├── financial_data.py    # Financial statements and metrics
+│   ├── stock_visualizer.py  # Chart visualization module
+│   └── realtime_monitor.py  # Real-time quote monitoring
+├── tests/                   # Test suite
+│   ├── __init__.py
+│   ├── conftest.py          # Shared test fixtures
+│   ├── test_financial_data.py
+│   ├── test_quant_analysis.py
+│   └── test_api.py
+├── pytest.ini               # Pytest configuration
+├── .gitignore               # Git ignore rules
+├── run_tests.sh             # Test runner script
 ├── mcp_config_example.json  # Example MCP configuration
-├── stock_fetcher.py         # Yahoo Finance data fetcher
-├── stock_predictor.py       # AI price prediction models
-├── quant_analysis.py        # Quantitative finance analysis
-├── financial_data.py        # Financial statements and metrics
-├── stock_visualizer.py      # Chart visualization module
-├── realtime_monitor.py      # Real-time quote monitoring
-├── requirements.txt         # Python dependencies
+├── requirements.txt         # Production dependencies
+├── requirements-dev.txt     # Development & testing dependencies
 └── README.md                # Complete documentation
 ```
 
@@ -1457,6 +1557,12 @@ MarketMind/
 
 ### MCP
 - **mcp** - Model Context Protocol SDK for AI assistant integration
+
+### Testing
+- **pytest** - Testing framework
+- **pytest-cov** - Coverage plugin for pytest
+- **pytest-mock** - Mocking plugin for pytest
+- **httpx** - HTTP client for testing FastAPI
 
 ## Tips
 

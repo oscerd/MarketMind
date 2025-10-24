@@ -7,12 +7,12 @@ A command-line tool for fetching real-time stock quotes and displaying charts.
 import argparse
 import sys
 from typing import List
-from stock_fetcher import StockFetcher
-from stock_visualizer import StockVisualizer
-from realtime_monitor import RealtimeMonitor
-from stock_predictor import StockPredictor
-from quant_analysis import QuantAnalysis
-from financial_data import FinancialData
+from .stock_fetcher import StockFetcher
+from .stock_visualizer import StockVisualizer
+from .realtime_monitor import RealtimeMonitor
+from .stock_predictor import StockPredictor
+from .quant_analysis import QuantAnalysis
+from .financial_data import FinancialData
 from colorama import Fore, Style, init
 
 # Initialize colorama

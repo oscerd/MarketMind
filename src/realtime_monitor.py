@@ -2,7 +2,7 @@ import time
 import os
 from datetime import datetime
 from colorama import Fore, Style, init
-from stock_fetcher import StockFetcher
+from .stock_fetcher import StockFetcher
 
 # Initialize colorama
 init(autoreset=True)

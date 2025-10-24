@@ -13,10 +13,10 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from stock_fetcher import StockFetcher
-from stock_predictor import StockPredictor
-from quant_analysis import QuantAnalysis
-from financial_data import FinancialData
+from .stock_fetcher import StockFetcher
+from .stock_predictor import StockPredictor
+from .quant_analysis import QuantAnalysis
+from .financial_data import FinancialData
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

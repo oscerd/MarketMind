@@ -11,11 +11,11 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import pandas as pd
 
-from stock_fetcher import StockFetcher
-from stock_predictor import StockPredictor
-from quant_analysis import QuantAnalysis
-from financial_data import FinancialData
-from stock_cli import DEFAULT_MARKET_SYMBOLS
+from .stock_fetcher import StockFetcher
+from .stock_predictor import StockPredictor
+from .quant_analysis import QuantAnalysis
+from .financial_data import FinancialData
+from .stock_cli import DEFAULT_MARKET_SYMBOLS
 
 # Initialize FastAPI app
 app = FastAPI(
